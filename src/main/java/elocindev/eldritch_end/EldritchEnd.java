@@ -16,6 +16,7 @@ public class EldritchEnd implements ModInitializer {
 	public static final String MODID = "eldritch_end";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MODID);
 
+	// Test commit
 	@Override
 	public void onInitialize() {
 		ConfigLoader.register();
