@@ -1,6 +1,7 @@
 package elocindev.eldritch_end.entity.faceless;
 
 import elocindev.eldritch_end.EldritchEnd;
+import elocindev.eldritch_end.registry.SoundEffectRegistry;
 import elocindev.eldritch_end.utils.ParticleUtils;
 import mod.azure.azurelib.ai.pathing.AzureNavigation;
 import mod.azure.azurelib.animatable.GeoEntity;
@@ -24,21 +25,31 @@ import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 @SuppressWarnings("resource")
 public class FacelessEntity extends HostileEntity implements GeoEntity {
     private final AnimatableInstanceCache cache = AzureLibUtil.createInstanceCache(this);
     private final ServerBossBar bossBar;
+    private float animationProgressTicks = 0;
+    private float animationDuration = 40;
     /*
     protected static final RawAnimation WALK = RawAnimation.begin().thenLoop("walk");
     protected static final RawAnimation ATTACK = RawAnimation.begin().thenLoop("attack");
     protected static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
      */
+
+    @Override
+    @Nullable
+    protected SoundEvent getAmbientSound() {
+        return SoundEffectRegistry.GROWL_EVENT;
+    }
 
     private static final float SURGE_RADIUS = 16f;
     private static final float DARKNESS_RANGE = 15f;
@@ -51,6 +62,7 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
             .setThickenFog(true);
         navigation = new AzureNavigation(this, world);
         this.setStepHeight(1.0F);
+        this.animationProgressTicks = 0;
     }
 
     private void shadowSurge(PlayerEntity target) {
@@ -75,7 +87,11 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
     public void tick() {
         super.tick();
         if (this.getWorld().isClient) return;
+        if (animationProgressTicks < animationDuration) animationProgressTicks++;
+        if (animationProgressTicks == 1) this.getWorld().playSound((PlayerEntity)null, this.getX(), this.getY(), this.getZ(), SoundEffectRegistry.PUNCH_EVENT, this.getSoundCategory(), 1F, 1.0f);
+        if (animationProgressTicks == 3) performKeyframeAttack(this.getTarget());
 
+        /*
         if (this.age % SURGE_RATE_TICKS == 0) {
             for (PlayerEntity playerEntity: this.getWorld().getEntitiesByClass(PlayerEntity.class, new Box(this.getBlockPos()).expand(SURGE_RADIUS*1.5f), entity -> true)) {
                 curse(playerEntity);
@@ -84,8 +100,8 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         }
 
         if (this.age % 100 == 0) {
-            StatusEffectUtil.addEffectToPlayersWithinDistance((ServerWorld) this.getWorld(), this, this.getPos(), (double)DARKNESS_RANGE, new StatusEffectInstance(StatusEffects.DARKNESS, 280, 0, false, false), 180);
-            StatusEffectUtil.addEffectToPlayersWithinDistance((ServerWorld) this.getWorld(), this, this.getPos(), (double)DARKNESS_RANGE, new StatusEffectInstance(StatusEffects.SLOWNESS, 280, 1, false, false), 180);
+            //StatusEffectUtil.addEffectToPlayersWithinDistance((ServerWorld) this.getWorld(), this, this.getPos(), (double)DARKNESS_RANGE, new StatusEffectInstance(StatusEffects.DARKNESS, 280, 0, false, false), 180);
+            //StatusEffectUtil.addEffectToPlayersWithinDistance((ServerWorld) this.getWorld(), this, this.getPos(), (double)DARKNESS_RANGE, new StatusEffectInstance(StatusEffects.SLOWNESS, 280, 1, false, false), 180);
 
             float missingHealth = (this.getMaxHealth() - this.getHealth()) / 2;
 
@@ -93,6 +109,8 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
                 playerEntity.damage(playerEntity.getDamageSources().generic(), missingHealth);
             }
         }
+
+         */
     }
 
     @Override
@@ -104,15 +122,20 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         }));
 
         controllers.add(new AnimationController<>(this, "attackAnim", event -> PlayState.CONTINUE)
-                .triggerableAnim("attack",
-                RawAnimation.begin().then("attack", Animation.LoopType.PLAY_ONCE)));
+                .triggerableAnim("slam",
+                RawAnimation.begin().then("slam", Animation.LoopType.PLAY_ONCE)));
     }
 
     @Override
     public boolean tryAttack(Entity target) {
-        triggerAnim("attackAnim", "attack");
-        this.handSwinging = false;
-        return super.tryAttack(target);
+        if (target.getWorld().isClient) return false;
+        if (this.animationProgressTicks == animationDuration) {
+            this.animationProgressTicks = 0;
+            triggerAnim("attackAnim", "slam");
+            this.handSwinging = false;
+        }
+        EldritchEnd.LOGGER.info("Attack!");
+        return false;
     }
 
 
@@ -179,5 +202,11 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
     @Override
     public AnimatableInstanceCache getAnimatableInstanceCache() {
         return cache;
+    }
+
+    private void performKeyframeAttack(Entity target) {
+        if (target != null && !target.getWorld().isClient) {
+            target.damage(this.getDamageSources().generic(), 0.1f);
+        }
     }
 }

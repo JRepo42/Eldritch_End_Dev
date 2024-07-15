@@ -16,7 +16,6 @@ public class EldritchEnd implements ModInitializer {
 	public static final String MODID = "eldritch_end";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MODID);
 
-	// Test commit
 	@Override
 	public void onInitialize() {
 		ConfigLoader.register();
@@ -34,6 +33,7 @@ public class EldritchEnd implements ModInitializer {
 		ItemGroupRegistry.register();
 		WorldgenRegistry.register();
 		StructureRegistry.register();
+		SoundEffectRegistry.register();
 
 		EtyrAttributeBuilder.buildItemTag();
 		ServerTickEvents.START_SERVER_TICK.register(new PlayerTickEventHandler());
