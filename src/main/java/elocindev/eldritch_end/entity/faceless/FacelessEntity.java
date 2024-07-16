@@ -27,6 +27,7 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -80,7 +81,9 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
 
     private void curse(PlayerEntity target) {
         if (target == null || Math.abs(this.getPos().y - target.getPos().y) < curseThreshold || target.getWorld().isClient) return;
-        target.teleport(this.getX(), this.getY() + 2, this.getZ());
+
+        Vec3d rotationVector = this.getRotationVector().normalize();
+        target.teleport(this.getX() + rotationVector.multiply(3).x, this.getY(), this.getZ() + rotationVector.multiply(3).z);
     }
 
     private void shadowSurge() {
@@ -119,7 +122,9 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
     private void shadowSurgeTeleport(Entity target) {
         if (target == null || this.getWorld().isClient
            || target.distanceTo(this) < SURGE_RADIUS) return;
-        target.teleport(this.getX(), this.getY() + 2, this.getZ());
+
+        Vec3d rotationVector = this.getRotationVector().normalize();
+        target.teleport(this.getX() + rotationVector.multiply(3).x, this.getY(), this.getZ() + rotationVector.multiply(3).z);
     }
 
     @Override
@@ -128,6 +133,11 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         if (this.getWorld().isClient) return;
         meleeLogic();
         shadowSurgeLogic();
+
+        // get rotation vector
+        // normalise
+        // add 1 to x and z
+        // add that to blockpos fr
 
         if (this.age % 10 == 0) {
             for (PlayerEntity playerEntity: this.getWorld().getEntitiesByClass(PlayerEntity.class, new Box(this.getBlockPos()).expand(64), entity -> true)) {
