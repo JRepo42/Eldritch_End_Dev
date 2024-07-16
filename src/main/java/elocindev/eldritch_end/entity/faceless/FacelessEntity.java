@@ -3,7 +3,6 @@ package elocindev.eldritch_end.entity.faceless;
 import elocindev.eldritch_end.EldritchEnd;
 import elocindev.eldritch_end.client.particle.EldritchParticles;
 import elocindev.eldritch_end.registry.SoundEffectRegistry;
-import elocindev.eldritch_end.utils.ParticleUtils;
 import mod.azure.azurelib.ai.pathing.AzureNavigation;
 import mod.azure.azurelib.animatable.GeoEntity;
 import mod.azure.azurelib.core.animatable.instance.AnimatableInstanceCache;
@@ -20,12 +19,10 @@ import net.minecraft.entity.boss.ServerBossBar;
 import net.minecraft.entity.boss.BossBar.Color;
 import net.minecraft.entity.boss.BossBar.Style;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
@@ -102,12 +99,9 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
      */
 
     private void shadowSurge() {
+        this.setStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, (int) shadowSurgeDuration, 255, false, false, false), null);
         EldritchParticles.playEffek("shadowsurge", this.getWorld(), this.getPos(),
                 true, 0.30F).bindOnEntity(this);
-    }
-
-    private void shadowSurgeAttack() {
-        this.getBoundingBox().expand(5, 5, 5)
     }
 
     private void meleeLogic() {
@@ -124,9 +118,16 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         }
 
         if (shadowSurgeProgress == 0) shadowSurge();
-        else if (shadowSurgeProgress == firstImpactTicks) EldritchEnd.LOGGER.info("First impact!");
-        else if (shadowSurgeProgress == secondImpactTicks) EldritchEnd.LOGGER.info("Second impact!");
-        else if (shadowSurgeProgress == thirdImpactTicks) EldritchEnd.LOGGER.info("Third impact!");
+        else if (shadowSurgeProgress == firstImpactTicks) shadowSurgeAttack();
+        else if (shadowSurgeProgress == secondImpactTicks) shadowSurgeAttack();
+        else if (shadowSurgeProgress == thirdImpactTicks) shadowSurgeAttack();
+    }
+
+    private void shadowSurgeAttack() {
+        float missingHealth = (this.getMaxHealth() - this.getHealth()) / 2;
+        for (PlayerEntity playerEntity: this.getWorld().getEntitiesByClass(PlayerEntity.class, new Box(this.getBlockPos()).expand(4), entity -> true)) {
+            playerEntity.damage(this.getDamageSources().generic(), missingHealth / 3f);
+        }
     }
 
     @Override
