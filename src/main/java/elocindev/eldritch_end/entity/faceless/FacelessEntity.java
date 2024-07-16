@@ -1,6 +1,7 @@
 package elocindev.eldritch_end.entity.faceless;
 
 import elocindev.eldritch_end.EldritchEnd;
+import elocindev.eldritch_end.client.particle.EldritchParticles;
 import elocindev.eldritch_end.registry.SoundEffectRegistry;
 import elocindev.eldritch_end.utils.ParticleUtils;
 import mod.azure.azurelib.ai.pathing.AzureNavigation;
@@ -36,14 +37,27 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("resource")
 public class FacelessEntity extends HostileEntity implements GeoEntity {
     private final AnimatableInstanceCache cache = AzureLibUtil.createInstanceCache(this);
+
     private final ServerBossBar bossBar;
     private float animationProgressTicks = 0;
     private float animationDuration = 40;
-    /*
-    protected static final RawAnimation WALK = RawAnimation.begin().thenLoop("walk");
-    protected static final RawAnimation ATTACK = RawAnimation.begin().thenLoop("attack");
-    protected static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
-     */
+
+    /** shadow surge variables **/
+    private float shadowSurgeProgress = 0;
+    private float shadowSurgeDuration = 94;
+    private float firstImpactTicks = 43;
+    private float secondImpactTicks = 52;
+    private float thirdImpactTicks = 63;
+
+    public static DefaultAttributeContainer.Builder setAttributes() {
+        return HostileEntity.createMobAttributes()
+                // TODO: REPLACE THIS WITH CUSTOM FACELESS CONFIG
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 1024)
+                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.25)
+                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 10)
+                .add(EntityAttributes.GENERIC_ATTACK_SPEED, 1)
+                .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 1000);
+    }
 
     @Override
     @Nullable
@@ -53,7 +67,7 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
 
     private static final float SURGE_RADIUS = 16f;
     private static final float DARKNESS_RANGE = 15f;
-    private static final int SURGE_RATE_TICKS = 4;
+    private static final int SURGE_RATE_TICKS = 100;
 
     public FacelessEntity(EntityType<? extends HostileEntity> entityType, World world) {
         super(entityType, world);
@@ -65,6 +79,7 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         this.animationProgressTicks = 0;
     }
 
+    /*
     private void shadowSurge(PlayerEntity target) {
         if (target == null || target.distanceTo(this) < SURGE_RADIUS) return;
         EldritchEnd.LOGGER.info(String.valueOf(target.distanceTo(this)));
@@ -76,41 +91,61 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         }
     }
 
-    
+
     private void curse(PlayerEntity target) {
         if (target == null || Math.abs(this.getPos().y - target.getPos().y) < 3 || target.getWorld().isClient) return;
         target.damage(target.getDamageSources().generic(), target.getMaxHealth() * 0.25f);
         ParticleUtils.sendParticlesToAll(target, "distanceWarningParticles");
     }
 
+
+     */
+
+    private void shadowSurge() {
+        EldritchParticles.playEffek("shadowsurge", this.getWorld(), this.getPos(),
+                true, 0.30F).bindOnEntity(this);
+    }
+
+    private void shadowSurgeAttack() {
+        this.getBoundingBox().expand(5, 5, 5)
+    }
+
+    private void meleeLogic() {
+        if (animationProgressTicks < animationDuration) animationProgressTicks++;
+        if (animationProgressTicks == 1) this.getWorld().playSound((PlayerEntity)null, this.getX(), this.getY(), this.getZ(), SoundEffectRegistry.PUNCH_EVENT, this.getSoundCategory(), 1F, 1.0f);
+        if (animationProgressTicks == 3) performKeyframeAttack(this.getTarget());
+    }
+
+    private void shadowSurgeLogic() {
+        if (shadowSurgeProgress < shadowSurgeDuration) {
+            shadowSurgeProgress++;
+        } else {
+            shadowSurgeProgress = 0;
+        }
+
+        if (shadowSurgeProgress == 0) shadowSurge();
+        else if (shadowSurgeProgress == firstImpactTicks) EldritchEnd.LOGGER.info("First impact!");
+        else if (shadowSurgeProgress == secondImpactTicks) EldritchEnd.LOGGER.info("Second impact!");
+        else if (shadowSurgeProgress == thirdImpactTicks) EldritchEnd.LOGGER.info("Third impact!");
+    }
+
     @Override
     public void tick() {
         super.tick();
         if (this.getWorld().isClient) return;
-        if (animationProgressTicks < animationDuration) animationProgressTicks++;
-        if (animationProgressTicks == 1) this.getWorld().playSound((PlayerEntity)null, this.getX(), this.getY(), this.getZ(), SoundEffectRegistry.PUNCH_EVENT, this.getSoundCategory(), 1F, 1.0f);
-        if (animationProgressTicks == 3) performKeyframeAttack(this.getTarget());
+        meleeLogic();
+        shadowSurgeLogic();
 
         /*
         if (this.age % SURGE_RATE_TICKS == 0) {
             for (PlayerEntity playerEntity: this.getWorld().getEntitiesByClass(PlayerEntity.class, new Box(this.getBlockPos()).expand(SURGE_RADIUS*1.5f), entity -> true)) {
-                curse(playerEntity);
-                shadowSurge(playerEntity);
-            }
-        }
 
-        if (this.age % 100 == 0) {
-            //StatusEffectUtil.addEffectToPlayersWithinDistance((ServerWorld) this.getWorld(), this, this.getPos(), (double)DARKNESS_RANGE, new StatusEffectInstance(StatusEffects.DARKNESS, 280, 0, false, false), 180);
-            //StatusEffectUtil.addEffectToPlayersWithinDistance((ServerWorld) this.getWorld(), this, this.getPos(), (double)DARKNESS_RANGE, new StatusEffectInstance(StatusEffects.SLOWNESS, 280, 1, false, false), 180);
-
-            float missingHealth = (this.getMaxHealth() - this.getHealth()) / 2;
-
-            for (PlayerEntity playerEntity: this.getWorld().getEntitiesByClass(PlayerEntity.class, new Box(this.getBlockPos()).expand(SURGE_RADIUS), entity -> true)) {
-                playerEntity.damage(playerEntity.getDamageSources().generic(), missingHealth);
             }
         }
 
          */
+
+        /* float missingHealth = (this.getMaxHealth() - this.getHealth()) / 2; */
     }
 
     @Override
@@ -159,16 +194,6 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
     }
 
-    public static DefaultAttributeContainer.Builder setAttributes() {
-        return HostileEntity.createMobAttributes()
-        // TODO: REPLACE THIS WITH CUSTOM FACELESS CONFIG
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 1024)
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.25)
-                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 5)
-                .add(EntityAttributes.GENERIC_ATTACK_SPEED, 1)
-                .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 1000);
-    }
-
     @Override
     protected void playStepSound(BlockPos pos, BlockState state) {}
 
@@ -204,9 +229,14 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         return cache;
     }
 
+    private float getAttackDamage() {
+        return (float)this.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
+    }
+
+
     private void performKeyframeAttack(Entity target) {
         if (target != null && !target.getWorld().isClient) {
-            target.damage(this.getDamageSources().generic(), 0.1f);
+            target.damage(this.getDamageSources().mobAttack(this), this.getAttackDamage());
         }
     }
 }
