@@ -9,6 +9,11 @@
     "sounds": [
         "eldritch_end:faceless/punch"
       ]
+  },
+  "orb_smash": {
+    "sounds": [
+        "eldritch_end:faceless/orb_hit"
+    ]
   }
 }
 

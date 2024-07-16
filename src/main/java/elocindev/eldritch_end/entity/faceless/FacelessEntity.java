@@ -125,6 +125,7 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
 
     private void shadowSurgeAttack() {
         float missingHealth = (this.getMaxHealth() - this.getHealth()) / 2;
+        this.getWorld().playSound((PlayerEntity)null, this.getX(), this.getY(), this.getZ(), SoundEffectRegistry.ORB_EVENT, this.getSoundCategory(), 1F, 1.0f);
         for (PlayerEntity playerEntity: this.getWorld().getEntitiesByClass(PlayerEntity.class, new Box(this.getBlockPos()).expand(4), entity -> true)) {
             playerEntity.damage(this.getDamageSources().generic(), missingHealth / 3f);
         }
