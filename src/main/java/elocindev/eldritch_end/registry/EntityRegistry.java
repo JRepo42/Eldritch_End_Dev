@@ -45,7 +45,9 @@ public class EntityRegistry {
 
     public static final EntityType<FacelessEntity> THE_FACELESS = Registry.register(
             Registries.ENTITY_TYPE, new Identifier(EldritchEnd.MODID, "the_faceless"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, FacelessEntity::new).dimensions(EntityDimensions.fixed(1.4F, 2.7F)).build());
+            FabricEntityTypeBuilder.create(SpawnGroup.MONSTER, FacelessEntity::new)
+                    .trackRangeBlocks(64)
+                    .dimensions(EntityDimensions.fixed(1.4F, 2.7F)).build());
 
 
 //     public static final EntityType<HasturEntity> HASTUR = Registry.register(

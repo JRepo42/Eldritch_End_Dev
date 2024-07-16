@@ -34,10 +34,12 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("resource")
 public class FacelessEntity extends HostileEntity implements GeoEntity {
     private final AnimatableInstanceCache cache = AzureLibUtil.createInstanceCache(this);
-
     private final ServerBossBar bossBar;
     private float animationProgressTicks = 0;
     private float animationDuration = 40;
+
+    /** curse variables **/
+    private int curseThreshold = 5;
 
     /** shadow surge variables **/
     private float shadowSurgeProgress = 0;
@@ -76,27 +78,10 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         this.animationProgressTicks = 0;
     }
 
-    /*
-    private void shadowSurge(PlayerEntity target) {
-        if (target == null || target.distanceTo(this) < SURGE_RADIUS) return;
-        EldritchEnd.LOGGER.info(String.valueOf(target.distanceTo(this)));
-        if (!this.getWorld().isClient) {
-            ParticleUtils.sendParticlesToAll(this, "teleportationRing");
-            ParticleUtils.sendParticlesToAll(target, "teleportationRing");
-
-            target.teleport(this.getX() + 2, this.getY(), this.getZ() + 2);
-        }
-    }
-
-
     private void curse(PlayerEntity target) {
-        if (target == null || Math.abs(this.getPos().y - target.getPos().y) < 3 || target.getWorld().isClient) return;
-        target.damage(target.getDamageSources().generic(), target.getMaxHealth() * 0.25f);
-        ParticleUtils.sendParticlesToAll(target, "distanceWarningParticles");
+        if (target == null || Math.abs(this.getPos().y - target.getPos().y) < curseThreshold || target.getWorld().isClient) return;
+        target.teleport(this.getX(), this.getY() + 2, this.getZ());
     }
-
-
-     */
 
     private void shadowSurge() {
         this.setStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, (int) shadowSurgeDuration, 255, false, false, false), null);
@@ -131,6 +116,12 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         }
     }
 
+    private void shadowSurgeTeleport(Entity target) {
+        if (target == null || this.getWorld().isClient
+           || target.distanceTo(this) < SURGE_RADIUS) return;
+        target.teleport(this.getX(), this.getY() + 2, this.getZ());
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -138,16 +129,12 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         meleeLogic();
         shadowSurgeLogic();
 
-        /*
-        if (this.age % SURGE_RATE_TICKS == 0) {
-            for (PlayerEntity playerEntity: this.getWorld().getEntitiesByClass(PlayerEntity.class, new Box(this.getBlockPos()).expand(SURGE_RADIUS*1.5f), entity -> true)) {
-
+        if (this.age % 10 == 0) {
+            for (PlayerEntity playerEntity: this.getWorld().getEntitiesByClass(PlayerEntity.class, new Box(this.getBlockPos()).expand(64), entity -> true)) {
+                shadowSurgeTeleport(playerEntity);
+                curse(playerEntity);
             }
         }
-
-         */
-
-        /* float missingHealth = (this.getMaxHealth() - this.getHealth()) / 2; */
     }
 
     @Override
