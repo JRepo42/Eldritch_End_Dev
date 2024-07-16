@@ -83,11 +83,12 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         if (target == null || Math.abs(this.getPos().y - target.getPos().y) < curseThreshold || target.getWorld().isClient) return;
 
         Vec3d rotationVector = this.getRotationVector().normalize();
-        target.teleport(this.getX() + rotationVector.multiply(3).x, this.getY(), this.getZ() + rotationVector.multiply(3).z);
+        target.teleport(this.getX() + rotationVector.multiply(2).x, this.getY(), this.getZ() + rotationVector.multiply(2).z);
     }
 
     private void shadowSurge() {
         this.setStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, (int) shadowSurgeDuration, 255, false, false, false), null);
+        this.shadowSurgeProgress = 0;
         EldritchParticles.playEffek("shadowsurge", this.getWorld(), this.getPos(),
                 true, 0.30F).bindOnEntity(this);
     }
@@ -101,8 +102,6 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
     private void shadowSurgeLogic() {
         if (shadowSurgeProgress < shadowSurgeDuration) {
             shadowSurgeProgress++;
-        } else {
-            shadowSurgeProgress = 0;
         }
 
         if (shadowSurgeProgress == 0) shadowSurge();
@@ -124,25 +123,24 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
            || target.distanceTo(this) < SURGE_RADIUS) return;
 
         Vec3d rotationVector = this.getRotationVector().normalize();
-        target.teleport(this.getX() + rotationVector.multiply(3).x, this.getY(), this.getZ() + rotationVector.multiply(3).z);
+        target.teleport(this.getX() + rotationVector.multiply(2).x, this.getY(), this.getZ() + rotationVector.multiply(2).z);
+
+        this.shadowSurge();
     }
 
     @Override
     public void tick() {
         super.tick();
         if (this.getWorld().isClient) return;
-        meleeLogic();
-        shadowSurgeLogic();
-
-        // get rotation vector
-        // normalise
-        // add 1 to x and z
-        // add that to blockpos fr
+        this.meleeLogic();
+        this.shadowSurgeLogic();
 
         if (this.age % 10 == 0) {
             for (PlayerEntity playerEntity: this.getWorld().getEntitiesByClass(PlayerEntity.class, new Box(this.getBlockPos()).expand(64), entity -> true)) {
-                shadowSurgeTeleport(playerEntity);
-                curse(playerEntity);
+                if (!playerEntity.isCreative()) {
+                    shadowSurgeTeleport(playerEntity);
+                    curse(playerEntity);
+                }
             }
         }
     }
