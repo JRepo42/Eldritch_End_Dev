@@ -12,6 +12,7 @@ import mod.azure.azurelib.util.AzureLibUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -43,6 +44,7 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
     private int curseThreshold = 5;
 
     /** shadow surge variables **/
+    private boolean shouldSurge = false;
     private float shadowSurgeProgress = 0;
     private float shadowSurgeDuration = 94;
     private float firstImpactTicks = 43;
@@ -89,8 +91,9 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
     private void shadowSurge() {
         this.setStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, (int) shadowSurgeDuration, 255, false, false, false), null);
         this.shadowSurgeProgress = 0;
+        this.shouldSurge = true;
         EldritchParticles.playEffek("shadowsurge", this.getWorld(), this.getPos(),
-                true, 0.30F).bindOnEntity(this);
+                true, 0.60F).bindOnEntity(this);
     }
 
     private void meleeLogic() {
@@ -102,18 +105,21 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
     private void shadowSurgeLogic() {
         if (shadowSurgeProgress < shadowSurgeDuration) {
             shadowSurgeProgress++;
+        } else {
+            this.shouldSurge = false;
+            this.shadowSurgeProgress = 0;
         }
 
-        if (shadowSurgeProgress == 0) shadowSurge();
-        else if (shadowSurgeProgress == firstImpactTicks) shadowSurgeAttack();
-        else if (shadowSurgeProgress == secondImpactTicks) shadowSurgeAttack();
-        else if (shadowSurgeProgress == thirdImpactTicks) shadowSurgeAttack();
+        if (shadowSurgeProgress == 0 && shouldSurge) shadowSurge();
+        else if (shadowSurgeProgress == firstImpactTicks && shouldSurge) shadowSurgeAttack();
+        else if (shadowSurgeProgress == secondImpactTicks && shouldSurge) shadowSurgeAttack();
+        else if (shadowSurgeProgress == thirdImpactTicks && shouldSurge) shadowSurgeAttack();
     }
 
     private void shadowSurgeAttack() {
         float missingHealth = (this.getMaxHealth() - this.getHealth()) / 2;
         this.getWorld().playSound((PlayerEntity)null, this.getX(), this.getY(), this.getZ(), SoundEffectRegistry.ORB_EVENT, this.getSoundCategory(), 1F, 1.0f);
-        for (PlayerEntity playerEntity: this.getWorld().getEntitiesByClass(PlayerEntity.class, new Box(this.getBlockPos()).expand(4), entity -> true)) {
+        for (PlayerEntity playerEntity: this.getWorld().getEntitiesByClass(PlayerEntity.class, new Box(this.getBlockPos()).expand(9, 0, 9), entity -> true)) {
             playerEntity.damage(this.getDamageSources().generic(), missingHealth / 3f);
         }
     }
@@ -126,6 +132,8 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         target.teleport(this.getX() + rotationVector.multiply(2).x, this.getY(), this.getZ() + rotationVector.multiply(2).z);
 
         this.shadowSurge();
+        if (!(target instanceof LivingEntity livingEntity)) return;
+        livingEntity.setStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 1, false, false, false), null);
     }
 
     @Override
