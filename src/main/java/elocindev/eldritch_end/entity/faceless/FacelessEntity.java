@@ -50,26 +50,7 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
     private float firstImpactTicks = 43;
     private float secondImpactTicks = 52;
     private float thirdImpactTicks = 63;
-
-    public static DefaultAttributeContainer.Builder setAttributes() {
-        return HostileEntity.createMobAttributes()
-                // TODO: REPLACE THIS WITH CUSTOM FACELESS CONFIG
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 1024)
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.25)
-                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 10)
-                .add(EntityAttributes.GENERIC_ATTACK_SPEED, 1)
-                .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 1000);
-    }
-
-    @Override
-    @Nullable
-    protected SoundEvent getAmbientSound() {
-        return SoundEffectRegistry.GROWL_EVENT;
-    }
-
-    private static final float SURGE_RADIUS = 16f;
-    private static final float DARKNESS_RANGE = 15f;
-    private static final int SURGE_RATE_TICKS = 100;
+    private static final float SURGE_RADIUS = 24f;
 
     public FacelessEntity(EntityType<? extends HostileEntity> entityType, World world) {
         super(entityType, world);
@@ -228,6 +209,24 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
             this.despawnCounter = 0;
         }
     }
+
+
+    public static DefaultAttributeContainer.Builder setAttributes() {
+        return HostileEntity.createMobAttributes()
+                // TODO: REPLACE THIS WITH CUSTOM FACELESS CONFIG
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 1024)
+                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.25)
+                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 10)
+                .add(EntityAttributes.GENERIC_ATTACK_SPEED, 1)
+                .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 1000);
+    }
+
+    @Override
+    @Nullable
+    protected SoundEvent getAmbientSound() {
+        return SoundEffectRegistry.GROWL_EVENT;
+    }
+
 
     @Override
     public AnimatableInstanceCache getAnimatableInstanceCache() {
