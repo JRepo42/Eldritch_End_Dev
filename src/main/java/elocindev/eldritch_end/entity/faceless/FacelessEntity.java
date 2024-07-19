@@ -35,6 +35,11 @@ import org.jetbrains.annotations.Nullable;
 
 @SuppressWarnings("resource")
 public class FacelessEntity extends HostileEntity implements GeoEntity {
+
+    // Todo: make drop 30xp
+    // Todo: make give xal to every player in 32 block radius on death
+    // Todo: smooth transition instead of teleport
+    
     private final AnimatableInstanceCache cache = AzureLibUtil.createInstanceCache(this);
     private final ServerBossBar bossBar;
     private float animationProgressTicks = 0;
