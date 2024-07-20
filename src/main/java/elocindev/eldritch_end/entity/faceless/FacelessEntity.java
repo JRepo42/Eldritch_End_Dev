@@ -149,7 +149,9 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
             this.setVelocity(0, 0, 0);
             target.setVelocity(0, 0,0);
         } else {
+            target.setStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 1, false, false, false), null);
             pullTargets.remove(target);
+            if (!this.shouldSurge) this.shadowSurge();
         }
         this.velocityDirty = true;
     }
