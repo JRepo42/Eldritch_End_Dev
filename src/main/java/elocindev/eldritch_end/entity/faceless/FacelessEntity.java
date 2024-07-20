@@ -32,6 +32,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Math;
 
 @SuppressWarnings("resource")
 public class FacelessEntity extends HostileEntity implements GeoEntity {
@@ -39,6 +40,8 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
     // Todo: make drop 30xp
     // Todo: make give xal to every player in 32 block radius on death
     // Todo: smooth transition instead of teleport
+
+    @Nullable Entity entityToPull;
     
     private final AnimatableInstanceCache cache = AzureLibUtil.createInstanceCache(this);
     private final ServerBossBar bossBar;
@@ -56,6 +59,11 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
     private float secondImpactTicks = 52;
     private float thirdImpactTicks = 63;
     private static final float SURGE_RADIUS = 24f;
+
+    /** shadow pull variables **/
+    private float pullTicksElapsed = 0;
+    private float pullDuration = 40;
+    private boolean pullActive = false;
 
     public FacelessEntity(EntityType<? extends HostileEntity> entityType, World world) {
         super(entityType, world);
@@ -122,6 +130,31 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         livingEntity.setStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 1, false, false, false), null);
     }
 
+
+    public static Vec3d lerpedPosition(Vec3d current, Vec3d desired, float timeDelta) {
+        return new Vec3d(Math.lerp(current.x, desired.x, timeDelta), Math.lerp(current.y, desired.y, timeDelta), Math.lerp(current.z, desired.z, timeDelta));
+    }
+
+
+    private void pullMove(Entity target) {
+        pullTicksElapsed = (pullTicksElapsed <= pullDuration) ? pullTicksElapsed + 1 : 0;
+        pullActive = pullTicksElapsed <= pullDuration && pullActive;
+        Vec3d lerpedPos = lerpedPosition(target.getPos(), this.getPos(), pullTicksElapsed / pullDuration);
+        target.teleport(lerpedPos.x, lerpedPos.y, lerpedPos.z);
+    }
+
+    private void pullLogic(Entity target) {
+        if (pullActive && !target.getBlockPos().isWithinDistance(this.getPos(), 2)) {
+            pullMove(target);
+            this.setVelocity(0, 0, 0);
+            target.setVelocity(0, 0,0);
+        } else {
+            pullTicksElapsed = 0;
+            pullActive = false;
+        }
+        this.velocityDirty = true;
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -129,11 +162,20 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         this.meleeLogic();
         this.shadowSurgeLogic();
 
+        if (entityToPull != null) {
+            pullLogic(entityToPull);
+        }
+
         if (this.age % 10 == 0) {
             for (PlayerEntity playerEntity: this.getWorld().getEntitiesByClass(PlayerEntity.class, new Box(this.getBlockPos()).expand(64), entity -> true)) {
                 if (!playerEntity.isCreative()) {
-                    shadowSurgeTeleport(playerEntity);
-                    curse(playerEntity);
+                    if (playerEntity.distanceTo(this) > SURGE_RADIUS) {
+                        pullActive = true;
+                        entityToPull = playerEntity;
+                    }
+
+                    //shadowSurgeTeleport(playerEntity);
+                    //curse(playerEntity);
                 }
             }
         }
