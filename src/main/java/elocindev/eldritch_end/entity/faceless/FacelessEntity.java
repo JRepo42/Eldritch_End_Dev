@@ -195,7 +195,7 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
     @Override
     public boolean tryAttack(Entity target) {
         if (target.getWorld().isClient) return false;
-        if (this.animationProgressTicks == animationDuration) {
+        if (this.animationProgressTicks == animationDuration && !shouldSurge) {
             this.animationProgressTicks = 0;
             triggerAnim("attackAnim", "slam");
             this.handSwinging = false;
