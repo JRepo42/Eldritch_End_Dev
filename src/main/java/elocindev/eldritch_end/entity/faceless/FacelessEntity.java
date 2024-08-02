@@ -139,15 +139,15 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
 
     private void pullMove(PlayerEntity target, int elapsedTicks) {
         pullTargets.put(target, (elapsedTicks <= pullDuration) ? elapsedTicks + 1 : 0);
-        Vec3d lerpedPos = lerpedPosition(target.getPos(), this.getPos(), pullTargets.get(target) / pullDuration);
-        target.teleport(lerpedPos.x, lerpedPos.y, lerpedPos.z);
+        if (!target.getWorld().isClient) {
+            target.setVelocity(new Vec3d(target.getX() - this.getX(), target.getY() - this.getY(), target.getZ() - this.getZ()).multiply(-0.2));
+            target.velocityModified = true;
+        }
     }
 
     private void pullLogic(PlayerEntity target, int elapsedTicks) {
         if (elapsedTicks < pullDuration && !target.getBlockPos().isWithinDistance(this.getPos(), 2)) {
             pullMove(target, elapsedTicks);
-            this.setVelocity(0, 0, 0);
-            target.setVelocity(0, 0,0);
         } else {
             target.setStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 1, false, false, false), null);
             pullTargets.remove(target);
@@ -160,14 +160,15 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
     public void tick() {
         super.tick();
         if (this.getWorld().isClient) return;
-        this.meleeLogic();
-        this.shadowSurgeLogic();
 
         if (pullTargets != null) {
             for (PlayerEntity key: pullTargets.keySet()) {
                 pullLogic(key, pullTargets.get(key));
             }
         }
+
+        this.meleeLogic();
+        this.shadowSurgeLogic();
 
         if (this.age % 10 != 0) return;
         for (PlayerEntity playerEntity: this.getWorld().getEntitiesByClass(PlayerEntity.class, new Box(this.getBlockPos()).expand(64), entity -> true)) {
