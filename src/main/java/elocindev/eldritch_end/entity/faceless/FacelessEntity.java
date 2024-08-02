@@ -149,6 +149,10 @@ public class FacelessEntity extends HostileEntity implements GeoEntity {
         if (elapsedTicks < pullDuration && !target.getBlockPos().isWithinDistance(this.getPos(), 2)) {
             pullMove(target, elapsedTicks);
         } else {
+            if (!target.getBlockPos().isWithinDistance(this.getPos(), 3)) {
+                Vec3d rotationVector = this.getRotationVector().normalize();
+                target.teleport(this.getX() + rotationVector.multiply(3).x, this.getY(), this.getZ() + rotationVector.multiply(3).z);
+            }
             target.setStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 1, false, false, false), null);
             pullTargets.remove(target);
             if (!this.shouldSurge) this.shadowSurge();
