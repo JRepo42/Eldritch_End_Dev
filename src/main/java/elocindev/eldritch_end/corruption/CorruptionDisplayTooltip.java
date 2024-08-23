@@ -104,7 +104,7 @@ public class CorruptionDisplayTooltip extends Item {
         .replace("%TENTACLE_UPDATE_RATE%", effects.tentacle_spawn.getEffectRateSeconds() + "")
         .replace("%DAMAGE_REDUCTION%", (int)effects.non_corruption_damage_reduction.getDamagePercentage()*100 + "%")
         .replace("%EYES_TENTACLE_RATE%", effects.ominous_eye_spawn.getEffectRateSeconds() + "")
-        .replace("%EYES_CHANCE%", (int)effects.ominous_eye_spawn.getSpawnChance()*100 + "%")
+        .replace("%EYES_CHANCE%", (int) Math.round(effects.ominous_eye_spawn.getSpawnChance()*100) + "%")
         .replace("%MADNESS_DAMAGE%", effects.madness_consumed.getStartingLevel() + "%");
 
         return Text.literal(placeholders).setStyle(text.getStyle());
